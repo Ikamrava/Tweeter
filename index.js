@@ -1,13 +1,5 @@
 import { tweetsData } from "./data.js";
-const tweetInput = document.getElementById("tweet-input");
-const tweetBtn = document.getElementById("tweet-btn");
-const feed = document.getElementById("feed");
-let heartclass = "";
-
-tweetBtn.addEventListener("click", function () {
-  tweetsData.push(tweetInput.value);
-  console.log(tweetsData);
-});
+import { v4 as uuidv4 } from "https://jspm.dev/uuid";
 
 function getFeedHtml(array) {
   let feedHtml = "";
@@ -21,6 +13,21 @@ function getFeedHtml(array) {
     let retweetsiconClass = "";
     if (tweet.isRetweeted) {
       retweetsiconClass = "retweeted";
+    }
+    let repliesHtml = "";
+    if (tweet.replies.length > 0) {
+      tweet.replies.forEach(function (reply) {
+        repliesHtml += `
+        <div class="tweet-reply">
+          <div class="tweet-inner">
+            <img src="${reply.profilePic}" class="profile-pic">
+                <div>
+                    <p class="handle">${reply.handle}</p>
+                    <p class="tweet-text">${reply.tweetText}</p>
+                </div>
+            </div>
+        </div> `;
+      });
     }
 
     feedHtml += `
@@ -49,6 +56,11 @@ function getFeedHtml(array) {
             </div>   
         </div>            
     </div>
+
+    <div id="replies-${tweet.uuid}" class="hidden">
+    ${repliesHtml}
+        
+    </div>   
 </div>`;
   });
 
@@ -56,7 +68,7 @@ function getFeedHtml(array) {
 }
 
 function render(list) {
-  feed.innerHTML = getFeedHtml(list);
+  document.getElementById("feed").innerHTML = getFeedHtml(list);
 }
 
 render(tweetsData);
@@ -66,6 +78,10 @@ document.addEventListener("click", function (e) {
     handleLikeClick(e.target.dataset.like);
   } else if (e.target.dataset.retweet) {
     handleRetweetClick(e.target.dataset.retweet);
+  } else if (e.target.dataset.reply) {
+    handleReplieClicks(e.target.dataset.reply);
+  } else if (e.target.id === "tweet-btn") {
+    handleTweetBtnClick();
   }
 });
 
@@ -97,4 +113,28 @@ function handleRetweetClick(tweetId) {
   }
   targetTweetObj.isRetweeted = !targetTweetObj.isRetweeted;
   render(tweetsData);
+}
+
+function handleReplieClicks(tweetId) {
+  document.getElementById(`replies-${tweetId}`).classList.toggle("hidden");
+}
+
+function handleTweetBtnClick() {
+  const tweetInput = document.getElementById("tweet-input");
+  if (tweetInput.value) {
+    tweetsData.unshift({
+      tweetText: tweetInput.value,
+      uuid: uuidv4(),
+      handle: ``,
+      profilePic: ``,
+      likes: 0,
+      retweets: 0,
+      replies: [],
+      isLiked: false,
+      isRetweeted: false,
+      uuid: uuidv4(),
+    });
+    render(tweetsData);
+    tweetInput.value = "";
+  }
 }
